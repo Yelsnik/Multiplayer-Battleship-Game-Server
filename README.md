@@ -22,8 +22,8 @@ A **real-time multiplayer Battleship game server** built with **Go** and **WebSo
 
 1. **Clone the Repository**
    ```sh
-   git clone https://github.com/yourusername/multiplayer-battleship.git
-   cd multiplayer-battleship
+   git clone https://github.com/Yelsnik/Multiplayer-Battleship-Game-Server.git
+   cd game-sever
    ```
 2. **Install Dependencies**
    ```sh
@@ -36,22 +36,22 @@ A **real-time multiplayer Battleship game server** built with **Go** and **WebSo
 
 ## How It Works
 
-1. **Players Connect via WebSockets** – Clients connect to the server via `ws://localhost:8080/ws`.
+1. **Players Connect via WebSockets** – Clients connect to the server via `ws://localhost:8000/ws`.
 2. **Matchmaking System** – Players are matched with opponents automatically.
 3. **Game Board Initialization** – Each player places ships before the game starts.
 4. **Turn-Based Attacks** – Players take turns attacking a grid position.
 5. **Game State Updates** – The server broadcasts updates to both players.
 6. **Win Condition** – The first player to sink all opponent ships wins.
 
-## API Endpoints
+<!-- ## API Endpoints -->
 
-| Method | Endpoint      | Description                    |
+<!-- | Method | Endpoint      | Description                    |
 | ------ | ------------- | ------------------------------ |
 | `WS`   | `/ws`         | WebSocket connection endpoint  |
 | `POST` | `/start-game` | Initiates a new game           |
 | `POST` | `/attack`     | Player attacks a grid cell     |
-| `GET`  | `/game-state` | Fetches the current game state |
-
+| `GET`  | `/game-state` | Fetches the current game state | -->
+<!-- 
 ## WebSocket Message Format
 
 - **Client sends (attack request):**
@@ -69,7 +69,7 @@ A **real-time multiplayer Battleship game server** built with **Go** and **WebSo
     "hit": true,
     "sunk": false
   }
-  ```
+  ``` -->
 
 ## Contributing
 
