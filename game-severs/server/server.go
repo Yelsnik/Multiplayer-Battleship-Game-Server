@@ -91,15 +91,25 @@ func (s *Server) HandleConnections(conn *websocket.Conn, board *board.Board, pla
 
 	ctx := context.Background()
 
+	// Check if the player already exists in Redis.
 	player, err := s.GetPlayerFromRedis(ctx, username, conn)
 	if err != nil {
+		// If the player does not exist, create a new player.
 		player = players.NewPlayer(conn, board, username)
 
 		playerData := PlayerData{
 			Username: player.Name,
-			Board:    BoardData(*player.Board),
+			Board: BoardData{
+				Grid: board.Grid,
+				Ship: SData{
+					X: board.Ship.X,
+					Y: board.Ship.Y,
+				},
+				Battery: board.Battery,
+			},
 		}
 
+		// Save the player data to Redis.
 		data, err := json.Marshal(playerData)
 		if err != nil {
 			log.Fatalf("Error marshalling player data: %v", err)
@@ -111,10 +121,13 @@ func (s *Server) HandleConnections(conn *websocket.Conn, board *board.Board, pla
 	}
 
 	// The player's ship is randomly placed on the board.
-	x := int(utils.RandomInt(1, 9))
-	y := int(utils.RandomInt(1, 9))
+	x := int(utils.RandomInt(0, 9))
+	y := int(utils.RandomInt(0, 9))
 	player.Board.PlaceShip(x, y)
+	player.Board.Battery = 10
 	player.Write(fmt.Sprintf("Your ship is placed at (%d, %d).", x, y))
+	player.SendBoard()
+	fmt.Sprintln(player.Board.Battery)
 
 	// Welcome message.
 	player.Write("Welcome to the ultimate Battleship game server!!!...")
@@ -151,8 +164,8 @@ func (s *Server) RunGameSessions(p1, p2 *players.Player, playersChan chan *playe
 	}
 
 	// Notify both players that the game has started.
-	p1.Write(fmt.Sprintf("Game started! You are Player 1. Your ship battery: %d", p1.Board.ShipBattery))
-	p2.Write(fmt.Sprintf("Game started! You are Player 2. Your ship battery: %d", p2.Board.ShipBattery))
+	p1.Write(fmt.Sprintf("Game started! You are Player 1. Your ship battery: %d", p1.Board.Battery))
+	p2.Write(fmt.Sprintf("Game started! You are Player 2. Your ship battery: %d", p2.Board.Battery))
 
 	// Start the game loop.
 	currentPlayer := p1
@@ -187,6 +200,17 @@ func (s *Server) RunGameSessions(p1, p2 *players.Player, playersChan chan *playe
 
 		// Use the opponent's board to process the shot.
 		result := opponent.Board.Fire(x, y)
+		if result == "HIT" {
+			battery := opponent.Board.ReduceBattery(1)
+			currentPlayer.Write(fmt.Sprintf("Your opponent's battery is now %d", opponent.Board.Battery))
+			opponent.Write(fmt.Sprintf("Your battery is now %d", opponent.Board.Battery))
+			if battery {
+				currentPlayer.Write("You win! Opponent's battery depleted.")
+				opponent.Write("You lose! Your battery is depleted.")
+				return
+			}
+		}
+
 		currentPlayer.Write(fmt.Sprintf("Result of firing at (%d, %d): %s", x, y, result))
 		opponent.Write(fmt.Sprintf("Your board was fired at (%d, %d): %s", x, y, result))
 
@@ -206,5 +230,5 @@ func promptPairing(p1, p2 *players.Player) bool {
 	response2 := strings.ToLower(strings.TrimSpace(<-p2.Input))
 
 	// If both players reply "yes", then they accept the pairing.
-	return response1 == "yes"  && response2 == "yes" 
+	return response1 == "yes" && response2 == "yes"
 }

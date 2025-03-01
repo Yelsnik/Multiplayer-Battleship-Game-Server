@@ -30,3 +30,8 @@ func NewPlayer(conn *websocket.Conn, board *board.Board, username string) *Playe
 func (p *Player) Write(message string) error {
 	return p.Conn.WriteMessage(websocket.TextMessage, []byte(message))
 }
+
+func (p *Player) SendBoard() {
+	boardData := p.Board.ToDisplayString() // Convert board to a string for display
+	p.Write("Your Board:\n" + boardData)   // Send board display to the player
+}

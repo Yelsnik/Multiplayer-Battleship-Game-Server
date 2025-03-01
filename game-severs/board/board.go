@@ -1,13 +1,23 @@
 package board
 
+import (
+	"fmt"
+	"game-sever/utils"
+)
+
 // type Cell int
 
-const (
-	Empty int = iota
-	Ship
-	Hit
-	Miss
-)
+// const (
+// 	Empty int = iota
+// 	Ship
+// 	Hit
+// 	Miss
+// )
+
+type S struct {
+	X       int
+	Y       int
+}
 
 type Boards interface {
 	PlaceShip(x, y int)
@@ -15,21 +25,41 @@ type Boards interface {
 }
 
 type Board struct {
-	Grid        [10][10]int
-	ShipBattery int
+	Grid [10][10]int
+	Ship S
+	Battery int
 }
 
 func NewBoard() *Board {
 	return &Board{
-		Grid:        [10][10]int{},
-		ShipBattery: 10,
+		Grid: [10][10]int{},
+		Ship: S{
+			X:       0,
+			Y:       0,
+		},
+		Battery: 10,
 	}
 }
 
 func (b *Board) PlaceShip(x, y int) {
 	if x >= 0 && x < 10 && y >= 0 && y < 10 {
-		b.Grid[x][y] = Ship
+		// // b.Grid[x][y] = Ship
+		// b.Ship.X = x
+		// b.Ship.Y = y
+		// Keep finding an empty spot if the chosen position is occupied
+		for b.Grid[x][y] != 0 { // 0 means Empty
+			x = int(utils.RandomInt(0, 9))
+			y = int(utils.RandomInt(0, 9))
+		}
+
+		// Mark the ship's position in the grid
+		b.Grid[x][y] = 1 // 1 represents Ship
+
+		// Store ship details
+		b.Ship.X = x
+		b.Ship.Y = y
 	}
+
 }
 
 func (b *Board) Fire(x, y int) string {
@@ -37,23 +67,61 @@ func (b *Board) Fire(x, y int) string {
 		return "invalid coordinates"
 	}
 
-	switch b.Grid[x][y] {
-	case Ship:
-		b.Grid[x][y] = Hit
+	fmt.Println(b.Ship.X, b.Ship.Y)
+
+	if x == b.Ship.X && y == b.Ship.Y {
+		// b.Grid[x][y] = Hit
 		return "HIT"
-	case Empty:
-		b.Grid[x][y] = Miss
+	} else {
+		// b.Grid[x][y] = Miss
 		return "MISS"
-	case Hit, Miss:
-		return "Already fired in this position"
-	default:
-		return "Unknown"
 	}
+
+	// switch b.Grid[x][y] {
+	// case Ship:
+	// 	b.Grid[x][y] = Hit
+	// 	return "HIT"
+	// case Empty:
+	// 	b.Grid[x][y] = Miss
+	// 	return "MISS"
+	// case Hit, Miss:
+	// 	return "Already fired in this position"
+	// default:
+	// 	return "Unknown"
+	// }
+
 }
 
 func (b *Board) ReduceBattery(damage int) bool {
-	b.ShipBattery -= damage
+	fmt.Println(b.Battery)
+	b.Battery -= damage
 
-	return b.ShipBattery <= 0
+	return b.Battery <= 0
 }
 
+func (b *Board) ToDisplayString() string {
+	var output string
+
+	for i := range b.Grid {
+		for j := range b.Grid[i] {
+			if i == b.Ship.X && j == b.Ship.Y {
+				output += " [s] " // Ship's position
+			} else {
+				output += " [] " // Empty space
+			}
+		}
+		output += "\n"
+	}
+
+	// for i := 0; i < 10; i++ {
+	// 	for j := 0; j < 10; j++ {
+	// 		if i == b.Ship.X && j == b.Ship.Y {
+	// 			output += " S " // Ship's position
+	// 		} else {
+	// 			output += " . " // Empty space
+	// 		}
+	// 	}
+	// 	output += "\n"
+	// }
+	return output
+}

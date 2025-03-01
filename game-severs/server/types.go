@@ -21,8 +21,14 @@ type PlayerData struct {
 }
 
 type BoardData struct {
-	Grid        [10][10]int `json:"grid"`
-	ShipBattery int         `json:"ship_battery"`
+	Grid    [10][10]int `json:"grid"`
+	Ship    SData       `json:"ship"`
+	Battery int         `json:"battery"`
+}
+
+type SData struct {
+	X int `json:"x"`
+	Y int `json:"y"`
 }
 
 func (s *Server) GetPlayerFromRedis(ctx context.Context, username string, conn *websocket.Conn) (*players.Player, error) {
@@ -57,6 +63,6 @@ func NewBoardFromData(data *BoardData) *board.Board {
 			b.Grid[i][j] = data.Grid[i][j]
 		}
 	}
-	b.ShipBattery = data.ShipBattery
+	b.Battery = data.Battery
 	return &b
 }

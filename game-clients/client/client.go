@@ -51,7 +51,7 @@ func ConnectToServer(address string) {
 		log.Fatalf("Error sending username to server: %v", err)
 	}
 
-	fmt.Println("Connected to the server. Enter your name:")
+	// fmt.Println("Connected to the server. Enter your name:")
 
 	// Handle incoming messages from the server in a separate goroutine
 	go func() {
