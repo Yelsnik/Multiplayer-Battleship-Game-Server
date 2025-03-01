@@ -25,14 +25,27 @@ A **real-time multiplayer Battleship game server** built with **Go** and **WebSo
    git clone https://github.com/Yelsnik/Multiplayer-Battleship-Game-Server.git
    cd game-sever
    ```
-2. **Install Dependencies**
+
+
+2. **Install Dependencies for both client and sever**
    ```sh
    go mod tidy
    ```
-3. **Run the Server**
-   ```sh
-   go run main.go
-   ```
+
+3. **Run the server**
+    ```
+    cd game-severs
+    make run
+    ```
+
+4. **Run the client**
+    ```
+    cd game-clients
+    make run
+    ```
+
+
+
 
 ## How It Works
 
