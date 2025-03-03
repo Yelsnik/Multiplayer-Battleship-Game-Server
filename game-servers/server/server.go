@@ -177,7 +177,7 @@ func (s *Server) RunGameSessions(p1, p2 *players.Player, playersChan chan *playe
 	opponent := p2
 
 	for {
-		currentPlayer.Write("Your turn! Enter command (e.g., 'fire 2 2'):")
+		currentPlayer.Write("Your turn! Enter command (e.g., 'move 2 2' or'fire 2 2'):")
 		opponent.Write("Waiting for opponent's move...")
 
 		// Wait for the current player's input.
@@ -190,29 +190,28 @@ func (s *Server) RunGameSessions(p1, p2 *players.Player, playersChan chan *playe
 		// Validate the command.
 		cmd = strings.TrimSpace(cmd)
 		parts := strings.Split(cmd, " ")
-		if len(parts) < 3 || strings.ToLower(parts[0]) != "fire" {
-			currentPlayer.Write("Invalid command. Use 'fire x y'. err")
-			continue
-		} else if len(parts) < 3 || strings.ToLower(parts[0]) != "move" {
-			currentPlayer.Write("Invalid command. Use 'move x y' to move a ship. err")
+		if len(parts) < 3 {
+			currentPlayer.Write("Invalid command. Use 'fire x y' or 'move x y'. err")
 			continue
 		}
 
-		// Process the command.
-		if parts[0] == "move" {
-			// Convert coordinates from string to integer.
-			x, err1 := strconv.Atoi(parts[1])
-			y, err2 := strconv.Atoi(parts[2])
-			if err1 != nil || err2 != nil {
-				currentPlayer.Write("Coordinates must be integers. err")
-				continue
-			}
+		// Extract the action and coordinates from the command.
+		action := strings.ToLower(parts[0])
+		x, err1 := strconv.Atoi(parts[1])
+		y, err2 := strconv.Atoi(parts[2])
+		if err1 != nil || err2 != nil {
+			currentPlayer.Write("Coordinates must be integers. err")
+			continue
+		}
 
+		// Process the move command.
+		if action == "move" {
 			// Use the opponent's board to process the shot.
-			result := opponent.Board.MoveShip(x, y)
+			result := currentPlayer.Board.MoveShip(x, y)
 			if result == fmt.Sprintf("Ship Moved to (%d, %d)", x, y) {
-				currentPlayer.Write(fmt.Sprintf("You moved your ship to (%d, %d)!", x, y))
-				continue
+				currentPlayer.Write(fmt.Sprintf("You moved your ship to (%d, %d)! noerr", x, y))
+				currentPlayer.SendBoard()
+				opponent.Write("Opponent moved their ship! noerr")
 			} else if result == "invalid coordinates" {
 				currentPlayer.Write("Invalid coordinates. Coordinates must be within the grid. err")
 				continue
@@ -223,9 +222,14 @@ func (s *Server) RunGameSessions(p1, p2 *players.Player, playersChan chan *playe
 				currentPlayer.Write("Invalid coordinates. Your ship is already in this position. err")
 				continue
 			}
+
+			// Swap turns after moving.
+			currentPlayer, opponent = opponent, currentPlayer
+			continue
 		}
 
-		if parts[0] == "fire" {
+		// Process the fire command.
+		if action == "fire" {
 			// Convert coordinates from string to integer.
 			x, err1 := strconv.Atoi(parts[1])
 			y, err2 := strconv.Atoi(parts[2])
@@ -240,6 +244,8 @@ func (s *Server) RunGameSessions(p1, p2 *players.Player, playersChan chan *playe
 				battery := opponent.Board.ReduceBattery(1)
 				currentPlayer.Write(fmt.Sprintf("Your opponent's battery is now %d", opponent.Board.Battery))
 				opponent.Write(fmt.Sprintf("Your battery is now %d", opponent.Board.Battery))
+
+				// Check if the opponent's battery is depleted.
 				if battery {
 					currentPlayer.Write("You win🎉! Opponent's battery depleted. noerr")
 					opponent.Write("You lose😢! Your battery is depleted. err")
@@ -247,8 +253,8 @@ func (s *Server) RunGameSessions(p1, p2 *players.Player, playersChan chan *playe
 				}
 			}
 
-			currentPlayer.Write(fmt.Sprintf("Result of firing at (%d, %d): %s", x, y, result))
-			opponent.Write(fmt.Sprintf("Your board was fired at (%d, %d): %s", x, y, result))
+			currentPlayer.Write(fmt.Sprintf("Result of firing at (%d, %d): %s info", x, y, result))
+			opponent.Write(fmt.Sprintf("Your board was fired at (%d, %d): %s info", x, y, result))
 		}
 
 		// Swap turns after each move.

@@ -23,11 +23,11 @@ type Client struct {
 }
 
 func ConnectToServer(address string) {
-	yellow := color.New(color.FgYellow).SprintFunc()
-	blue := color.New(color.FgBlue).SprintFunc()
-	green := color.New(color.FgGreen).SprintFunc()
-	cyan := color.New(color.FgCyan).SprintFunc()
-	red := color.New(color.FgRed).SprintFunc()
+	yellow := color.New(color.FgHiYellow).SprintFunc()
+	purple := color.New(color.FgHiMagenta).SprintFunc()
+	green := color.New(color.FgHiGreen).SprintFunc()
+	cyan := color.New(color.FgHiCyan).SprintFunc()
+	red := color.New(color.FgHiRed).SprintFunc()
 
 	// Prompt user for their username
 	fmt.Print(yellow("Enter your username: "))
@@ -67,7 +67,7 @@ func ConnectToServer(address string) {
 				os.Exit(0)
 			}
 
-			SetColor(blue, cyan, green, red, string(message))
+			SetColor(purple, cyan, green, red, string(message))
 		}
 	}()
 
@@ -87,27 +87,32 @@ func ConnectToServer(address string) {
 	}
 }
 
-func SetColor(blue, cyan, green, red func(a ...interface{}) string, message string) {
-	if message == "[]" {
-		fmt.Println(cyan(message))
-	}
-
-	if message == "[s]" {
-		fmt.Println(cyan(message))
-	}
-
+func SetColor(purple, cyan, green, red func(a ...interface{}) string, message string) {
 	result := strings.Split(message, " ")
 
 	if result[len(result)-1] == "err" {
-		result := append(result[:len(result)-1], result[:len(result)-1+0]...)
+		result := result[:len(result)-1]
 		msg := strings.Join(result, " ")
 		fmt.Println(red(msg))
 	} else if result[len(result)-1] == "noerr" {
-		result := append(result[:len(result)-1], result[:len(result)-1+0]...)
+		result := result[:len(result)-1]
 		msg := strings.Join(result, " ")
 		fmt.Println(green(msg))
+	} else if result[len(result)-1] == "info" {
+		// check if the second last element is "HIT"
+		if result[len(result)-2] == "HIT" {
+			result := result[:len(result)-1]
+			msg := strings.Join(result, " ")
+			fmt.Println(green(msg))
+		} else {
+			result := result[:len(result)-1]
+			msg := strings.Join(result, " ")
+			fmt.Println(red(msg))
+		}
+	} else if result[0] == "Welcome" {
+		fmt.Println(cyan(message))
 	} else {
-		fmt.Println(blue(message))
+		fmt.Println(purple(message))
 	}
 
 }
