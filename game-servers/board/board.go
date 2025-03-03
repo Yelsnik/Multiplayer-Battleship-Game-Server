@@ -127,6 +127,7 @@ func (b *Board) ToDisplayString() string {
 }
 
 func (b *Board) MoveShip(x, y int) string {
+	// Check if the new position is within the grid
 	if x < 0 || x > 10 || y < 0 || y > 10 {
 		return "invalid coordinates"
 	}

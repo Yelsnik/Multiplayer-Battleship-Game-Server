@@ -7,7 +7,9 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 
+	"github.com/fatih/color"
 	"github.com/gorilla/websocket"
 )
 
@@ -21,9 +23,14 @@ type Client struct {
 }
 
 func ConnectToServer(address string) {
+	yellow := color.New(color.FgYellow).SprintFunc()
+	blue := color.New(color.FgBlue).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+	cyan := color.New(color.FgCyan).SprintFunc()
+	red := color.New(color.FgRed).SprintFunc()
 
 	// Prompt user for their username
-	fmt.Print("Enter your username: ")
+	fmt.Print(yellow("Enter your username: "))
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
 	username := scanner.Text()
@@ -51,8 +58,6 @@ func ConnectToServer(address string) {
 		log.Fatalf("Error sending username to server: %v", err)
 	}
 
-	// fmt.Println("Connected to the server. Enter your name:")
-
 	// Handle incoming messages from the server in a separate goroutine
 	go func() {
 		for {
@@ -61,7 +66,8 @@ func ConnectToServer(address string) {
 				log.Printf("Error reading from server: %v", err)
 				os.Exit(0)
 			}
-			fmt.Println(string(message))
+
+			SetColor(blue, cyan, green, red, string(message))
 		}
 	}()
 
@@ -79,4 +85,29 @@ func ConnectToServer(address string) {
 	if err := scanner.Err(); err != nil {
 		log.Printf("Error reading from input: %v", err)
 	}
+}
+
+func SetColor(blue, cyan, green, red func(a ...interface{}) string, message string) {
+	if message == "[]" {
+		fmt.Println(cyan(message))
+	}
+
+	if message == "[s]" {
+		fmt.Println(cyan(message))
+	}
+
+	result := strings.Split(message, " ")
+
+	if result[len(result)-1] == "err" {
+		result := append(result[:len(result)-1], result[:len(result)-1+0]...)
+		msg := strings.Join(result, " ")
+		fmt.Println(red(msg))
+	} else if result[len(result)-1] == "noerr" {
+		result := append(result[:len(result)-1], result[:len(result)-1+0]...)
+		msg := strings.Join(result, " ")
+		fmt.Println(green(msg))
+	} else {
+		fmt.Println(blue(message))
+	}
+
 }

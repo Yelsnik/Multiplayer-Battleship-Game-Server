@@ -1,7 +1,11 @@
+/*
+Copyright © 2025 NAME HERE <EMAIL ADDRESS>
+
+*/
 package main
 
-import "game-client/client"
+import "game-client/cmd"
 
 func main() {
-	client.ConnectToServer("ws://localhost:8000/ws")
+	cmd.Execute()
 }

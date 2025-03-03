@@ -127,7 +127,7 @@ func (s *Server) HandleConnections(conn *websocket.Conn, board *board.Board, pla
 	player.Board.Battery = 10
 	player.Write(fmt.Sprintf("Your ship is placed at (%d, %d).", x, y))
 	player.SendBoard()
-	fmt.Sprintln(player.Board.Battery)
+	// fmt.Sprintln(player.Board.Battery)
 
 	// Welcome message.
 	player.Write("Welcome to the ultimate Battleship game server!!!...")
@@ -151,15 +151,20 @@ func (s *Server) HandleConnections(conn *websocket.Conn, board *board.Board, pla
 
 func (s *Server) RunGameSessions(p1, p2 *players.Player, playersChan chan *players.Player) {
 	// Prompt both players to accept the pairing.
-	if !promptPairing(p1, p2) {
+	result, ok := promptPairing(p1, p2)
+	if !ok {
 		// If either player rejects, notify both and re-queue the ones that accept.
 		p1.Write("Pairing rejected. Returning to lobby.")
 		p2.Write("Pairing rejected. Returning to lobby.")
 
-		// Optionally, you could decide to only requeue the one who accepted,
-		// or both, depending on your game design.
-		playersChan <- p1
-		playersChan <- p2
+		if result == "player1 rejected" {
+			playersChan <- p2
+		} else if result == "player2 rejected" {
+			playersChan <- p1
+		} else {
+			playersChan <- p1
+			playersChan <- p2
+		}
 		return
 	}
 
@@ -178,63 +183,80 @@ func (s *Server) RunGameSessions(p1, p2 *players.Player, playersChan chan *playe
 		// Wait for the current player's input.
 		cmd, ok := <-currentPlayer.Input
 		if !ok {
-			opponent.Write("Opponent disconnected. You win!")
+			opponent.Write("Opponent disconnected. You win! noerr")
 			return
 		}
 
 		// Validate the command.
 		cmd = strings.TrimSpace(cmd)
 		parts := strings.Split(cmd, " ")
-		if len(parts) < 3 || strings.ToLower(parts[0]) != "fire" || strings.ToLower(parts[0]) != "move" {
-			currentPlayer.Write("Invalid command. Use 'fire x y' or 'move x y' to move a ship.")
+		if len(parts) < 3 || strings.ToLower(parts[0]) != "fire" {
+			currentPlayer.Write("Invalid command. Use 'fire x y'. err")
+			continue
+		} else if len(parts) < 3 || strings.ToLower(parts[0]) != "move" {
+			currentPlayer.Write("Invalid command. Use 'move x y' to move a ship. err")
 			continue
 		}
 
+		// Process the command.
 		if parts[0] == "move" {
 			// Convert coordinates from string to integer.
 			x, err1 := strconv.Atoi(parts[1])
 			y, err2 := strconv.Atoi(parts[2])
 			if err1 != nil || err2 != nil {
-				currentPlayer.Write("Coordinates must be integers.")
+				currentPlayer.Write("Coordinates must be integers. err")
 				continue
 			}
 
 			// Use the opponent's board to process the shot.
 			result := opponent.Board.MoveShip(x, y)
 			if result == fmt.Sprintf("Ship Moved to (%d, %d)", x, y) {
+				currentPlayer.Write(fmt.Sprintf("You moved your ship to (%d, %d)!", x, y))
+				continue
+			} else if result == "invalid coordinates" {
+				currentPlayer.Write("Invalid coordinates. Coordinates must be within the grid. err")
+				continue
+			} else if result == "Position Occupied" {
+				currentPlayer.Write("Invalid coordinates. Position already occupied. err")
+				continue
+			} else {
+				currentPlayer.Write("Invalid coordinates. Your ship is already in this position. err")
+				continue
 			}
 		}
 
-		// Convert coordinates from string to integer.
-		x, err1 := strconv.Atoi(parts[1])
-		y, err2 := strconv.Atoi(parts[2])
-		if err1 != nil || err2 != nil {
-			currentPlayer.Write("Coordinates must be integers.")
-			continue
-		}
-
-		// Use the opponent's board to process the shot.
-		result := opponent.Board.Fire(x, y)
-		if result == "HIT" {
-			battery := opponent.Board.ReduceBattery(1)
-			currentPlayer.Write(fmt.Sprintf("Your opponent's battery is now %d", opponent.Board.Battery))
-			opponent.Write(fmt.Sprintf("Your battery is now %d", opponent.Board.Battery))
-			if battery {
-				currentPlayer.Write("You win! Opponent's battery depleted.")
-				opponent.Write("You lose! Your battery is depleted.")
-				return
+		if parts[0] == "fire" {
+			// Convert coordinates from string to integer.
+			x, err1 := strconv.Atoi(parts[1])
+			y, err2 := strconv.Atoi(parts[2])
+			if err1 != nil || err2 != nil {
+				currentPlayer.Write("Coordinates must be integers. err")
+				continue
 			}
-		}
 
-		currentPlayer.Write(fmt.Sprintf("Result of firing at (%d, %d): %s", x, y, result))
-		opponent.Write(fmt.Sprintf("Your board was fired at (%d, %d): %s", x, y, result))
+			// Use the opponent's board to process the shot.
+			result := opponent.Board.Fire(x, y)
+			if result == "HIT" {
+				battery := opponent.Board.ReduceBattery(1)
+				currentPlayer.Write(fmt.Sprintf("Your opponent's battery is now %d", opponent.Board.Battery))
+				opponent.Write(fmt.Sprintf("Your battery is now %d", opponent.Board.Battery))
+				if battery {
+					currentPlayer.Write("You win🎉! Opponent's battery depleted. noerr")
+					opponent.Write("You lose😢! Your battery is depleted. err")
+					return
+				}
+			}
+
+			currentPlayer.Write(fmt.Sprintf("Result of firing at (%d, %d): %s", x, y, result))
+			opponent.Write(fmt.Sprintf("Your board was fired at (%d, %d): %s", x, y, result))
+		}
 
 		// Swap turns after each move.
 		currentPlayer, opponent = opponent, currentPlayer
 	}
 }
 
-func promptPairing(p1, p2 *players.Player) bool {
+func promptPairing(p1, p2 *players.Player) (string, bool) {
 	// Send pairing invitation messages.
 	p1.Write(fmt.Sprintf("You have been paired with %s. Do you accept? (yes/no)", p2.Name))
 	p2.Write(fmt.Sprintf("You have been paired with %s. Do you accept? (yes/no)", p1.Name))
@@ -244,6 +266,12 @@ func promptPairing(p1, p2 *players.Player) bool {
 	response1 := strings.ToLower(strings.TrimSpace(<-p1.Input))
 	response2 := strings.ToLower(strings.TrimSpace(<-p2.Input))
 
-	// If both players reply "yes", then they accept the pairing.
-	return response1 == "yes" && response2 == "yes"
+	// Check if either player rejected the pairing.
+	if response1 == "no" || response1 == "n" {
+		return "player1 rejected", false
+	} else if response2 == "no" || response2 == "n" {
+		return "player2 rejected", false
+	} else {
+		return "pairing accepted", true
+	}
 }
