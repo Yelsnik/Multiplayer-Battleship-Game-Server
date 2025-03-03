@@ -125,3 +125,28 @@ func (b *Board) ToDisplayString() string {
 	// }
 	return output
 }
+
+func (b *Board) MoveShip(x, y int) string {
+	if x < 0 || x > 10 || y < 0 || y > 10 {
+		return "invalid coordinates"
+	}
+
+	// Check if the ship is already in the new position
+	if x == b.Ship.X && y == b.Ship.Y {
+		return "Already in this position"
+	}
+
+	// check if the new position is occupied
+	if b.Grid[x][y] != 0 {
+		return "Position Occupied"
+	}
+
+	// Mark the ship's position in the grid
+	b.Grid[x][y] = 1 // 1 represents Ship
+
+	// Store ship details
+	b.Ship.X = x
+	b.Ship.Y = y
+
+	return fmt.Sprintf("Ship Moved to (%d, %d)", x, y)
+}

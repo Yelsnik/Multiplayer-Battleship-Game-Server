@@ -185,9 +185,24 @@ func (s *Server) RunGameSessions(p1, p2 *players.Player, playersChan chan *playe
 		// Validate the command.
 		cmd = strings.TrimSpace(cmd)
 		parts := strings.Split(cmd, " ")
-		if len(parts) < 3 || strings.ToLower(parts[0]) != "fire" {
-			currentPlayer.Write("Invalid command. Use 'fire x y'")
+		if len(parts) < 3 || strings.ToLower(parts[0]) != "fire" || strings.ToLower(parts[0]) != "move" {
+			currentPlayer.Write("Invalid command. Use 'fire x y' or 'move x y' to move a ship.")
 			continue
+		}
+
+		if parts[0] == "move" {
+			// Convert coordinates from string to integer.
+			x, err1 := strconv.Atoi(parts[1])
+			y, err2 := strconv.Atoi(parts[2])
+			if err1 != nil || err2 != nil {
+				currentPlayer.Write("Coordinates must be integers.")
+				continue
+			}
+
+			// Use the opponent's board to process the shot.
+			result := opponent.Board.MoveShip(x, y)
+			if result == fmt.Sprintf("Ship Moved to (%d, %d)", x, y) {
+			}
 		}
 
 		// Convert coordinates from string to integer.
