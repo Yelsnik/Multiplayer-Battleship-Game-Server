@@ -41,7 +41,15 @@ A **real-time multiplayer Battleship game server** built with **Go** and **WebSo
 4. **Run the client**
     ```
     cd game-clients
-    make run
+    ```
+    then 
+    ```
+    make install
+    ```
+
+    run the command with the associated flags
+    ```
+    game-client connect -H localhost -p 8000
     ```
 
 
